@@ -555,4 +555,4 @@ function checkLeavesContinuously() {
     }, 60000); 
 }
 
-client.login('MTM0MjI4ODUyODIwNTE1MjM3OQ.GRrZj1.qUXlQDKnThl5eg0DBw-fdQk6oJ-66Zi-c0w2YQ');
+client.login('');
