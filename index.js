@@ -555,4 +555,4 @@ function checkLeavesContinuously() {
     }, 60000); 
 }
 
-client.login('');
+client.login(process.env.TOKEN);
