@@ -562,14 +562,4 @@ function checkLeavesContinuously() {
         }
     }, 60000); 
 }
-
-// تشغيل نظام التنصت لكشف سبب التعليق
-client.on('debug', console.log); 
-
-// مسح أي مسافة مخفية من التوكن ومحاولة الاتصال
-client.login(process.env.TOKEN.trim()).then(() => {
-    console.log("✅ تم الاتصال بالديسكورد بنجاح!");
-}).catch(err => {
-    console.log("❌ فشل تسجيل الدخول! السبب:");
-    console.error(err);
-});
+client.login(process.env.TOKEN); 
