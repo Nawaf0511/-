@@ -563,15 +563,11 @@ function checkLeavesContinuously() {
     }, 60000); 
 }
 
-console.log("==== جارِ محاولة تشغيل البوت ====");
+// تشغيل نظام التنصت لكشف سبب التعليق
+client.on('debug', console.log); 
 
-if (!process.env.TOKEN) {
-    console.log("❌ تنبيه: التوكن غير موجود في إعدادات Render! تأكد من كتابة TOKEN في الـ Environment Variables");
-} else {
-    console.log("✅ تم العثور على التوكن في Render، جاري الاتصال بالديسكورد...");
-}
-
-client.login(process.env.TOKEN).then(() => {
+// مسح أي مسافة مخفية من التوكن ومحاولة الاتصال
+client.login(process.env.TOKEN.trim()).then(() => {
     console.log("✅ تم الاتصال بالديسكورد بنجاح!");
 }).catch(err => {
     console.log("❌ فشل تسجيل الدخول! السبب:");
