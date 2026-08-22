@@ -564,3 +564,18 @@ function checkLeavesContinuously() {
 }
 
 client.login(process.env.TOKEN);
+
+console.log("==== جارِ محاولة تشغيل البوت ====");
+
+if (!process.env.TOKEN) {
+    console.log("❌ تنبيه: التوكن غير موجود في إعدادات Render! تأكد من كتابة TOKEN في الـ Environment Variables");
+} else {
+    console.log("✅ تم العثور على التوكن في Render، جاري الاتصال بالديسكورد...");
+}
+
+client.login(process.env.TOKEN).then(() => {
+    console.log("✅ تم الاتصال بالديسكورد بنجاح!");
+}).catch(err => {
+    console.log("❌ فشل تسجيل الدخول! السبب:");
+    console.error(err);
+});
