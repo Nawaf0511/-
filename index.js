@@ -563,8 +563,6 @@ function checkLeavesContinuously() {
     }, 60000); 
 }
 
-client.login(process.env.TOKEN);
-
 console.log("==== جارِ محاولة تشغيل البوت ====");
 
 if (!process.env.TOKEN) {
