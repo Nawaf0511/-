@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 app.get('/', (req, res) => res.send('Bot is online!'));
 app.listen(process.env.PORT || 3000, () => console.log('Web server is ready!'));
+
 const { 
     Client, 
     GatewayIntentBits, 
@@ -64,7 +65,6 @@ async function updateStatsPanel(client, db) {
                     description += `\n**🏛️ قطاع ${sectorName}:**\n`;
                     sectorLeaves.forEach((leave, index) => {
                         const medal = medals[index] || '🏅';
-                        // استخدام t:TIMESTAMP:F يعطي الوقت والتاريخ الدقيق جداً
                         description += `${medal} | الموظف: <@${leave.userId}> ← تنتهي: <t:${Math.floor(leave.endTime / 1000)}:F>\n`;
                     });
                 }
@@ -211,7 +211,6 @@ client.on('interactionCreate', async interaction => {
         if (interaction.customId === 'admin_menu') {
             if (!interaction.member.permissions.has('Administrator')) return interaction.reply({ content: '❌ لا تملك صلاحية.', ephemeral: true });
 
-            // إعداد لوحة الإحصائيات (الجديد)
             if (selected === 'cp_setup_stats') {
                 const modal = new ModalBuilder().setCustomId('modal_setup_stats').setTitle('تثبيت لوحة الإحصائيات');
                 const channelInput = new TextInputBuilder().setCustomId('channel_id').setLabel('ايدي الروم المراد وضع الإحصائيات فيه').setStyle(TextInputStyle.Short).setRequired(true);
@@ -331,7 +330,7 @@ client.on('interactionCreate', async interaction => {
                 }
                 db.leaves = db.leaves.filter(l => l.userId !== interaction.user.id);
                 saveDB(db);
-                updateStatsPanel(client, db); // تحديث الإحصائيات
+                updateStatsPanel(client, db); 
                 await interaction.reply({ content: '✅ تم كسر إجازتك بنجاح وسحب رتبة الإجازة. أهلاً بعودتك!', ephemeral: true });
                 
                 if (sectorData && sectorData.logChannelId) {
@@ -359,7 +358,7 @@ client.on('interactionCreate', async interaction => {
             db.statsChannelId = channelId;
             db.statsMessageId = msg.id;
             saveDB(db);
-            updateStatsPanel(client, db); // تحديث المحتوى فوراً
+            updateStatsPanel(client, db);
 
             return interaction.reply({ content: '✅ تم تثبيت لوحة الإحصائيات بنجاح. سيتم تحديثها تلقائياً عند أي إجراء.', ephemeral: true });
         }
@@ -418,7 +417,7 @@ client.on('interactionCreate', async interaction => {
             db.leaves = db.leaves.filter(l => l.userId !== userId);
             db.leaves.push({ userId, guildId: interaction.guild.id, sector, endTime: endDateObj.getTime() });
             saveDB(db);
-            updateStatsPanel(client, db); // تحديث الإحصائيات
+            updateStatsPanel(client, db);
 
             await targetMember.send(`✅ **تم قبول طلب إجازتك! سلم عتادك وسلمك العسكري.**\nالقطاع: ${sector}\nموعد الانتهاء: <t:${Math.floor(endDateObj.getTime() / 1000)}:F>`).catch(() => null);
 
@@ -506,6 +505,11 @@ client.on('interactionCreate', async interaction => {
             saveDB(db);
             updateStatsPanel(client, db);
 
+            const targetMember = await interaction.guild.members.fetch(userId).catch(() => null);
+            if (targetMember) {
+                await targetMember.send(`✅ **تم تمديد إجازتك بواسطة مسؤول القطاع!**\nموعد الانتهاء الجديد: <t:${Math.floor(db.leaves[leaveIndex].endTime / 1000)}:F>`).catch(() => null);
+            }
+
             return interaction.reply({ content: `✅ تم تمديد الإجازة بنجاح.`, ephemeral: true });
         }
 
@@ -554,7 +558,7 @@ function checkLeavesContinuously() {
         }
         if (updated) {
             saveDB(db);
-            updateStatsPanel(client, db); // تحديث الإحصائيات إذا انتهت إجازة
+            updateStatsPanel(client, db); 
         }
     }, 60000); 
 }
