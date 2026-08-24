@@ -23,7 +23,7 @@ app.listen(PORT, () => console.log(`🌐 Web server is running on port ${PORT}`)
 // ==========================================
 const MAIN_BOT_TOKEN = process.env.TOKEN || 'ضع_توكن_البوت_الرئيسي_هنا';
 // حطيت لك مفتاحك الجديد هنا عشان نضمن إنه يقرأه صح 100%
-const GEMINI_API_KEY = process.env.GEMINI_KEY || 'AQ.Ab8RN6ILssuTOTEdQs8iJnvOLVclLrfaOHif1LI1zYMxIlcHhA';
+const GEMINI_API_KEY = process.env.GEMINI_KEY || 'AQ.Ab8RN6KjQENn4sdZpp3sX0mCZ13CU6cZ4HLF002azSx9h8_OIg';
 const PREFIX = '!';
 const OWNER_ID = '972244532542459954';
 const LOG_CHANNEL_ID = '1506610506843291649'; 
