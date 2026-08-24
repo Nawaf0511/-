@@ -187,21 +187,19 @@ client.on(Events.MessageCreate, async message => {
         await message.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(selectMenu)] });
     }
 
-    // --- 4. محادثة الذكاء الاصطناعي ---
+  // --- 4. محادثة الذكاء الاصطناعي ---
     if (db.ai_channel && message.channel.id === db.ai_channel && !message.content.startsWith(PREFIX)) {
         await message.channel.sendTyping();
         try {
-            // حدثنا الموديل هنا للنسخة المعتمدة الجديدة
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
             const result = await model.generateContent(message.content);
-            const response = await result.response;
-            await message.reply(response.text());
+            await message.reply(result.response.text());
         } catch (error) {
             console.error(error);
-            await message.reply("معليش، الذكاء الاصطناعي يواجه مشكلة حالياً.");
+            // 👇 هنا الفخ اللي بيعلمنا وش المشكلة بالضبط داخل الدسكورد
+            await message.reply(`معليش، الذكاء الاصطناعي يواجه مشكلة حالياً.\n**السبب من سيرفرات قوقل:** \`${error.message}\``);
         }
     }
-});
 
 // ==========================================
 // 🖱️ التفاعلات (القوائم المنسدلة والموديلز والأزرار)
