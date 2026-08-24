@@ -21,9 +21,9 @@ app.listen(PORT, () => console.log(`🌐 Web server is running on port ${PORT}`)
 // ==========================================
 // ⚙️ الإعدادات الأساسية
 // ==========================================
-// يفضل دائماً استخدام المتغيرات البيئية (Environment Variables) في Render لحماية التوكن
 const MAIN_BOT_TOKEN = process.env.TOKEN || 'ضع_توكن_البوت_الرئيسي_هنا';
-const GEMINI_API_KEY = 'AQ.Ab8RN6ILssuTOTEdQs8iJnvOLVclLrfaOHif1LI1zYMxIlcHhA';
+// حطيت لك مفتاحك الجديد هنا عشان نضمن إنه يقرأه صح 100%
+const GEMINI_API_KEY = process.env.GEMINI_KEY || 'AQ.Ab8RN6ILssuTOTEdQs8iJnvOLVclLrfaOHif1LI1zYMxIlcHhA';
 const PREFIX = '!';
 const OWNER_ID = '972244532542459954';
 const LOG_CHANNEL_ID = '1506610506843291649'; 
@@ -187,7 +187,7 @@ client.on(Events.MessageCreate, async message => {
         await message.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(selectMenu)] });
     }
 
-  // --- 4. محادثة الذكاء الاصطناعي ---
+    // --- 4. محادثة الذكاء الاصطناعي (مع الفخ لمعرفة الخطأ) ---
     if (db.ai_channel && message.channel.id === db.ai_channel && !message.content.startsWith(PREFIX)) {
         await message.channel.sendTyping();
         try {
@@ -200,6 +200,7 @@ client.on(Events.MessageCreate, async message => {
             await message.reply(`معليش، الذكاء الاصطناعي يواجه مشكلة حالياً.\n**السبب من سيرفرات قوقل:** \`${error.message}\``);
         }
     }
+}); // هذا هو القوس اللي كان ناقص عليك يا وحش 😉
 
 // ==========================================
 // 🖱️ التفاعلات (القوائم المنسدلة والموديلز والأزرار)
