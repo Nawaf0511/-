@@ -253,13 +253,24 @@ client.on(Events.InteractionCreate, async i => {
     if (i.isModalSubmit()) {
         if (i.customId === 'whitelist_modal') {
             const id = i.fields.getTextInputValue('user_id_input');
-            let s = db[i.guild.id] || { whitelist: [] };
-            if (s.whitelist.includes(id)) { s.whitelist = s.whitelist.filter(x => x !== id); await i.reply({ content: `✅ أزلنا الرتبة \`${id}\``, ephemeral: true }); }
-            else { s.whitelist.push(id); await i.reply({ content: `✅ أضفنا الرتبة \`${id}\``, ephemeral: true }); }
-            db[i.guild.id] = s; saveDB(); 
+            let s = db[i.guild.id] || {};
+            
+            // 👇 التعديل هنا: يجهز قائمة التخطي إذا ما كانت موجودة
+            if (!s.whitelist) s.whitelist = []; 
+
+            if (s.whitelist.includes(id)) { 
+                s.whitelist = s.whitelist.filter(x => x !== id); 
+                await i.reply({ content: `✅ أزلنا الرتبة \`${id}\``, ephemeral: true }); 
+            } else { 
+                s.whitelist.push(id); 
+                await i.reply({ content: `✅ أضفنا الرتبة \`${id}\``, ephemeral: true }); 
+            }
+            
+            db[i.guild.id] = s; 
+            saveDB(); 
             
             const st = (state) => state ? '🟢 **مفعل**' : '🔴 **معطل**';
-            const embed = new EmbedBuilder().setTitle('🛡️ لوحة تحكم الحماية').setColor('#2b2d31').setDescription(`> 🎭 **حماية الرتب الشاملة:** ${st(s.antiRole)}\n> 📁 **حماية الرومات:** ${st(s.antiChannel)}\n> 👥 **منع توزيع الرتب:** ${st(s.antiRoleAssign)}\n> 🔨 **حماية الباند:** ${st(s.antiBan)}\n> 👢 **حماية الطرد:** ${st(s.antiKick)}\n> 🔗 **الروابط والملفات:** ${st(s.antiLink)}\n\n🛡️ **رتب التخطي:** 🎖️ \`${s.whitelist?.length || 0}\` رتب مسجلة`).setFooter({ text: 'التخطي يعتمد على الرتب 🚨' });
+            const embed = new EmbedBuilder().setTitle('🛡️ لوحة تحكم الحماية').setColor('#2b2d31').setDescription(`> 🎭 **حماية الرتب الشاملة:** ${st(s.antiRole)}\n> 📁 **حماية الرومات:** ${st(s.antiChannel)}\n> 👥 **منع توزيع الرتب:** ${st(s.antiRoleAssign)}\n> 🔨 **حماية الباند:** ${st(s.antiBan)}\n> 👢 **حماية الطرد:** ${st(s.antiKick)}\n> 🔗 **الروابط والملفات:** ${st(s.antiLink)}\n\n🛡️ **رتب التخطي:** 🎖️ \`${s.whitelist.length}\` رتب مسجلة`).setFooter({ text: 'التخطي يعتمد على الرتب 🚨' });
             try { await i.message.edit({ embeds: [embed] }); } catch(e){}
         }
 
@@ -432,4 +443,4 @@ client.on('guildMemberAdd', async member => {
     }
 });
 
-const MAIN_BOT_TOKEN = process.env.TOKEN;
+client.login(MAIN_BOT_TOKEN);
