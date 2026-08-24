@@ -22,7 +22,7 @@ app.listen(PORT, () => console.log(`🌐 Web server is running on port ${PORT}`)
 // ⚙️ الإعدادات الأساسية
 // ==========================================
 // يفضل دائماً استخدام المتغيرات البيئية (Environment Variables) في Render لحماية التوكن
-const MAIN_BOT_TOKEN = process.env.TOKEN || 'MTUzNzQ0Njc2MDk3NTQ0MTk0MA.GtzqXi.MBEGLgacjdiRYfa8xS3yIKLd_U0nFnNXi3FTNQ';
+const MAIN_BOT_TOKEN = process.env.TOKEN || 'MTUzNzQ0Njc2MDk3NTQ0MTk0MA.GUXVxe.2A7mZauwZIP9o-aMIm2fWz3iu7X_ulC4weU6gY';
 const GEMINI_API_KEY = process.env.GEMINI_KEY || 'AQ.Ab8RN6JOdYVy0LDg7VUeFHhd0eJ-wLjDPlK5eH1554_3C46nEQ';
 const PREFIX = '!';
 const OWNER_ID = '972244532542459954';
