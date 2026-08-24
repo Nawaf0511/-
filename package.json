@@ -1,13 +1,17 @@
 {
-  "name": "NawafDEV",
+  "name": "protection-multibot",
   "version": "1.0.0",
-  "description": "Leave Management Bot",
+  "description": "Discord Bot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
     "discord.js": "^14.14.1",
-    "express": "^4.18.2"
+    "@discordjs/voice": "^0.16.1",
+    "@google/generative-ai": "^0.1.1",
+    "express": "^4.18.2",
+    "libsodium-wrappers": "^0.7.13",
+    "tweetnacl": "^1.0.3"
   }
 }
