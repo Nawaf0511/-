@@ -191,6 +191,7 @@ client.on(Events.MessageCreate, async message => {
     if (db.ai_channel && message.channel.id === db.ai_channel && !message.content.startsWith(PREFIX)) {
         await message.channel.sendTyping();
         try {
+            // حدثنا الموديل هنا للنسخة المعتمدة الجديدة
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
             const result = await model.generateContent(message.content);
             const response = await result.response;
@@ -255,7 +256,7 @@ client.on(Events.InteractionCreate, async i => {
             const id = i.fields.getTextInputValue('user_id_input');
             let s = db[i.guild.id] || {};
             
-            // 👇 التعديل هنا: يجهز قائمة التخطي إذا ما كانت موجودة
+            // إصلاح نظام رتب التخطي
             if (!s.whitelist) s.whitelist = []; 
 
             if (s.whitelist.includes(id)) { 
