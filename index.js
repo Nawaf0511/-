@@ -191,7 +191,7 @@ client.on(Events.MessageCreate, async message => {
     if (db.ai_channel && message.channel.id === db.ai_channel && !message.content.startsWith(PREFIX)) {
         await message.channel.sendTyping();
         try {
-            const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash"});
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
             const result = await model.generateContent(message.content);
             await message.reply(result.response.text());
         } catch (error) {
