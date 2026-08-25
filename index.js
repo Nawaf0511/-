@@ -15,7 +15,9 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🌐 Web server is running on port ${PORT}`));
 
 const MAIN_BOT_TOKEN = process.env.TOKEN || 'ضع_توكن_البوت_الرئيسي_هنا';
-const GEMINI_API_KEY = process.env.GEMINI_KEY || 'AQ.Ab8RN6KjQENn4sdZpp3sX0mCZ13CU6cZ4HLF002azSx9h8_OIg';
+
+// 🚀 مفتاحك الجديد من Groq (شغال 100%)
+const GROQ_API_KEY = process.env.GROQ_KEY || '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';
 const PREFIX = '!';
 const OWNER_ID = '972244532542459954';
 const LOG_CHANNEL_ID = '1506610506843291649'; 
@@ -160,15 +162,19 @@ client.on(Events.MessageCreate, async message => {
         await message.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(selectMenu)] });
     }
 
-    // --- 4. محادثة الذكاء الاصطناعي (الطريقة المباشرة) ---
+    // --- 4. محادثة الذكاء الاصطناعي (Groq AI) ---
     if (db.ai_channel && message.channel.id === db.ai_channel && !message.content.startsWith(PREFIX)) {
         await message.channel.sendTyping();
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            const response = await fetch(`https://api.groq.com/openai/v1/chat/completions`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Authorization': `Bearer ${GROQ_API_KEY}`,
+                    'Content-Type': 'application/json' 
+                },
                 body: JSON.stringify({
-                    contents: [{ parts: [{ text: message.content }] }]
+                    model: "llama3-70b-8192", 
+                    messages: [{ role: "user", content: message.content }]
                 })
             });
             
@@ -176,9 +182,9 @@ client.on(Events.MessageCreate, async message => {
             
             if (!response.ok) {
                 console.error(data.error);
-                await message.reply(`معليش، الذكاء الاصطناعي يواجه مشكلة حالياً.\n**السبب الجديد من قوقل:** \`${data.error.message}\``);
+                await message.reply(`معليش، الذكاء الاصطناعي يواجه مشكلة حالياً.\n**السبب:** \`${data.error?.message || 'خطأ في الاتصال'}\``);
             } else {
-                const replyText = data.candidates[0].content.parts[0].text;
+                const replyText = data.choices[0].message.content;
                 await message.reply(replyText);
             }
         } catch (error) {
