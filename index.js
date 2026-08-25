@@ -10,13 +10,11 @@ const { joinVoiceChannel } = require('@discordjs/voice');
 const express = require('express'); 
 
 const app = express();
-app.get('/', (req, res) => res.send('Bot is running successfully on Render!'));
+app.get('/', (req, res) => res.send('Bot is running successfully!'));
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🌐 Web server is running on port ${PORT}`));
 
 const MAIN_BOT_TOKEN = process.env.TOKEN || 'ضع_توكن_البوت_الرئيسي_هنا';
-
-// 🚀 مفتاحك الجديد من Groq (شغال 100%)
 const GROQ_API_KEY = process.env.GROQ_KEY || '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';
 const PREFIX = '!';
 const OWNER_ID = '972244532542459954';
@@ -24,27 +22,18 @@ const LOG_CHANNEL_ID = '1506610506843291649';
 
 const client = new Client({
     intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildModeration,
-        GatewayIntentBits.GuildInvites,
-        GatewayIntentBits.GuildVoiceStates,
-        GatewayIntentBits.GuildEmojisAndStickers
+        GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildModeration, GatewayIntentBits.GuildInvites,
+        GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.GuildEmojisAndStickers
     ]
 });
 
 const activeBots = new Map(); 
-
 const dbPath = './database.json';
 let db = { tokens: [], ai_channel: "", voice_configs: {} };
 
-if (fs.existsSync(dbPath)) {
-    db = Object.assign(db, JSON.parse(fs.readFileSync(dbPath, 'utf8')));
-} else {
-    fs.writeFileSync(dbPath, JSON.stringify(db, null, 4));
-}
+if (fs.existsSync(dbPath)) db = Object.assign(db, JSON.parse(fs.readFileSync(dbPath, 'utf8')));
+else fs.writeFileSync(dbPath, JSON.stringify(db, null, 4));
 const saveDB = () => fs.writeFileSync(dbPath, JSON.stringify(db, null, 4));
 
 async function isExempt(guild, userId) {
@@ -89,26 +78,19 @@ async function sendInviteToVictim(guild, user, reason) {
 function startChildBot(token) {
     if (activeBots.has(token)) return; 
     const child = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
-    
     child.once(Events.ClientReady, () => {
         console.log(`🟢 البوت الفرعي ${child.user.tag} اشتغل!`);
         activeBots.set(token, child);
         if (db.voice_configs[token]) {
             const guild = child.guilds.cache.first(); 
-            if (guild) {
-                joinVoiceChannel({
-                    channelId: db.voice_configs[token],
-                    guildId: guild.id,
-                    adapterCreator: guild.voiceAdapterCreator,
-                });
-            }
+            if (guild) joinVoiceChannel({ channelId: db.voice_configs[token], guildId: guild.id, adapterCreator: guild.voiceAdapterCreator });
         }
     });
-    child.login(token).catch(err => console.log('❌ خطأ في توكن بوت فرعي:', err));
+    child.login(token).catch(err => console.log('❌ خطأ:', err));
 }
 
 client.on(Events.ClientReady, () => {
-    console.log(`🤖 البوت الرئيسي ${client.user.tag} جاهز! ونظام الحماية يعمل.`);
+    console.log(`🤖 البوت الرئيسي ${client.user.tag} جاهز!`);
     if(db.tokens) db.tokens.forEach(token => startChildBot(token));
 });
 
@@ -146,46 +128,30 @@ client.on(Events.MessageCreate, async message => {
     }
 
     if (message.content === PREFIX + 'panel' && (message.author.id === OWNER_ID || message.author.id === message.guild.ownerId)) {
-        const embed = new EmbedBuilder()
-            .setTitle('🎛️ لوحة تحكم البوتات المركزية')
-            .setDescription('أهلاً بك، اختر الإجراء اللي تبيه من القائمة المنسدلة تحت:')
-            .setColor('#bdbdbd'); 
-
-        const selectMenu = new StringSelectMenuBuilder()
-            .setCustomId('bot_control_panel')
-            .setPlaceholder('اختر الإجراء المطلوب من هنا...')
-            .addOptions(
-                new StringSelectMenuOptionBuilder().setLabel('إضافة توكن بوت').setDescription('لإدخال بوت جديد للنظام').setValue('add_token').setEmoji('➕'),
-                new StringSelectMenuOptionBuilder().setLabel('تحديد روم الذكاء الاصطناعي').setDescription('لتحديد الروم الخاص بمحادثة الذكاء الاصطناعي').setValue('set_ai_room').setEmoji('🤖'),
-                new StringSelectMenuOptionBuilder().setLabel('إدخال بوت لروم صوتي').setDescription('لإدخال أحد البوتات لروم صوتي محدد').setValue('join_voice').setEmoji('🔊')
-            );
+        const embed = new EmbedBuilder().setTitle('🎛️ لوحة تحكم البوتات').setDescription('اختر الإجراء:').setColor('#bdbdbd'); 
+        const selectMenu = new StringSelectMenuBuilder().setCustomId('bot_control_panel').setPlaceholder('اختر الإجراء...').addOptions(
+            new StringSelectMenuOptionBuilder().setLabel('إضافة توكن بوت').setValue('add_token').setEmoji('➕'),
+            new StringSelectMenuOptionBuilder().setLabel('تحديد روم الذكاء الاصطناعي').setValue('set_ai_room').setEmoji('🤖'),
+            new StringSelectMenuOptionBuilder().setLabel('إدخال بوت لروم صوتي').setValue('join_voice').setEmoji('🔊')
+        );
         await message.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(selectMenu)] });
     }
 
-    // --- 4. محادثة الذكاء الاصطناعي (Groq AI) ---
+    // --- 4. محادثة الذكاء الاصطناعي ---
     if (db.ai_channel && message.channel.id === db.ai_channel && !message.content.startsWith(PREFIX)) {
         await message.channel.sendTyping();
         try {
             const response = await fetch(`https://api.groq.com/openai/v1/chat/completions`, {
                 method: 'POST',
-                headers: { 
-                    'Authorization': `Bearer ${GROQ_API_KEY}`,
-                    'Content-Type': 'application/json' 
-                },
-                body: JSON.stringify({
-                    model: "llama3-70b-8192", 
-                    messages: [{ role: "user", content: message.content }]
-                })
+                headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model: "llama-3.1-70b-versatile", messages: [{ role: "user", content: message.content }] })
             });
-            
             const data = await response.json();
-            
             if (!response.ok) {
                 console.error(data.error);
                 await message.reply(`معليش، الذكاء الاصطناعي يواجه مشكلة حالياً.\n**السبب:** \`${data.error?.message || 'خطأ في الاتصال'}\``);
             } else {
-                const replyText = data.choices[0].message.content;
-                await message.reply(replyText);
+                await message.reply(data.choices[0].message.content);
             }
         } catch (error) {
             console.error(error);
@@ -199,7 +165,7 @@ client.on(Events.InteractionCreate, async i => {
         if (i.customId === 'protection_menu') {
             if (i.user.id !== i.guild.ownerId && i.user.id !== OWNER_ID) return;
             let s = db[i.guild.id] || { whitelist: [] };
-            model: "llama-3.1-70b-versatile",
+            const v = i.values[0];
             if (v === 'manage_whitelist') {
                 const modal = new ModalBuilder().setCustomId('whitelist_modal').setTitle('رتب التخطي').addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('user_id_input').setLabel('أدخل أيدي الرتبة:').setStyle(TextInputStyle.Short).setRequired(true)));
                 return await i.showModal(modal);
@@ -207,12 +173,10 @@ client.on(Events.InteractionCreate, async i => {
             if (v === 'toggle_antiRole') s.antiRole = !s.antiRole; if (v === 'toggle_antiChannel') s.antiChannel = !s.antiChannel; if (v === 'toggle_antiRoleAssign') s.antiRoleAssign = !s.antiRoleAssign;
             if (v === 'toggle_antiBan') s.antiBan = !s.antiBan; if (v === 'toggle_antiKick') s.antiKick = !s.antiKick; if (v === 'toggle_antiLinks') { const st = !s.antiLink; s.antiLink = st; s.antiMalware = st; }
             db[i.guild.id] = s; saveDB(); 
-            
             const st = (state) => state ? '🟢 **مفعل**' : '🔴 **معطل**';
             const embed = new EmbedBuilder().setTitle('🛡️ لوحة تحكم الحماية').setColor('#2b2d31').setDescription(`> 🎭 **حماية الرتب الشاملة:** ${st(s.antiRole)}\n> 📁 **حماية الرومات:** ${st(s.antiChannel)}\n> 👥 **منع توزيع الرتب:** ${st(s.antiRoleAssign)}\n> 🔨 **حماية الباند:** ${st(s.antiBan)}\n> 👢 **حماية الطرد:** ${st(s.antiKick)}\n> 🔗 **الروابط والملفات:** ${st(s.antiLink)}\n\n🛡️ **رتب التخطي:** 🎖️ \`${s.whitelist?.length || 0}\` رتب مسجلة`).setFooter({ text: 'التخطي يعتمد على الرتب 🚨' });
             await i.update({ embeds: [embed] });
         }
-
         if (i.customId === 'bot_control_panel') {
             const choice = i.values[0]; 
             if (choice === 'add_token') {
@@ -227,35 +191,23 @@ client.on(Events.InteractionCreate, async i => {
             }
             else if (choice === 'join_voice') {
                 const modal = new ModalBuilder().setCustomId('voice_modal').setTitle('إدخال بوت للروم الصوتي');
-                modal.addComponents(
-                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('bot_token').setLabel("توكن البوت").setStyle(TextInputStyle.Short)), 
-                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('voice_room_id').setLabel("أيدي الروم الصوتي").setStyle(TextInputStyle.Short))
-                );
+                modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('bot_token').setLabel("توكن البوت").setStyle(TextInputStyle.Short)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('voice_room_id').setLabel("أيدي الروم الصوتي").setStyle(TextInputStyle.Short)));
                 await i.showModal(modal);
             }
         }
     }
-
     if (i.isModalSubmit()) {
         if (i.customId === 'whitelist_modal') {
             const id = i.fields.getTextInputValue('user_id_input');
             let s = db[i.guild.id] || {};
             if (!s.whitelist) s.whitelist = []; 
-
-            if (s.whitelist.includes(id)) { 
-                s.whitelist = s.whitelist.filter(x => x !== id); 
-                await i.reply({ content: `✅ أزلنا الرتبة \`${id}\``, ephemeral: true }); 
-            } else { 
-                s.whitelist.push(id); 
-                await i.reply({ content: `✅ أضفنا الرتبة \`${id}\``, ephemeral: true }); 
-            }
+            if (s.whitelist.includes(id)) { s.whitelist = s.whitelist.filter(x => x !== id); await i.reply({ content: `✅ أزلنا الرتبة \`${id}\``, ephemeral: true }); } 
+            else { s.whitelist.push(id); await i.reply({ content: `✅ أضفنا الرتبة \`${id}\``, ephemeral: true }); }
             db[i.guild.id] = s; saveDB(); 
-            
             const st = (state) => state ? '🟢 **مفعل**' : '🔴 **معطل**';
             const embed = new EmbedBuilder().setTitle('🛡️ لوحة تحكم الحماية').setColor('#2b2d31').setDescription(`> 🎭 **حماية الرتب الشاملة:** ${st(s.antiRole)}\n> 📁 **حماية الرومات:** ${st(s.antiChannel)}\n> 👥 **منع توزيع الرتب:** ${st(s.antiRoleAssign)}\n> 🔨 **حماية الباند:** ${st(s.antiBan)}\n> 👢 **حماية الطرد:** ${st(s.antiKick)}\n> 🔗 **الروابط والملفات:** ${st(s.antiLink)}\n\n🛡️ **رتب التخطي:** 🎖️ \`${s.whitelist.length}\` رتب مسجلة`).setFooter({ text: 'التخطي يعتمد على الرتب 🚨' });
             try { await i.message.edit({ embeds: [embed] }); } catch(e){}
         }
-
         if (i.customId === 'token_modal') {
             const token = i.fields.getTextInputValue('bot_token');
             if (!db.tokens.includes(token)) {
@@ -265,30 +217,23 @@ client.on(Events.InteractionCreate, async i => {
                 await i.reply({ content: '✅ تم حفظ التوكن وتشغيل البوت بنجاح!', ephemeral: true });
             } else { await i.reply({ content: '⚠️ هذا البوت مضاف من قبل!', ephemeral: true }); }
         }
-
         if (i.customId === 'ai_room_modal') {
             const roomId = i.fields.getTextInputValue('room_id');
             db.ai_channel = roomId; saveDB();
             await i.reply({ content: `✅ تم تعيين روم الذكاء الاصطناعي بنجاح <#${roomId}>`, ephemeral: true });
         }
-
         if (i.customId === 'voice_modal') {
             const token = i.fields.getTextInputValue('bot_token');
             const voiceId = i.fields.getTextInputValue('voice_room_id');
             if(!db.voice_configs) db.voice_configs = {};
             db.voice_configs[token] = voiceId; saveDB();
-
             const childClient = activeBots.get(token);
             if (childClient) {
-                joinVoiceChannel({
-                    channelId: voiceId, guildId: i.guildId,
-                    adapterCreator: childClient.guilds.cache.get(i.guildId).voiceAdapterCreator,
-                });
+                joinVoiceChannel({ channelId: voiceId, guildId: i.guildId, adapterCreator: childClient.guilds.cache.get(i.guildId).voiceAdapterCreator });
                 await i.reply({ content: `✅ البوت دخل الروم الصوتي بنجاح!`, ephemeral: true });
             } else { await i.reply({ content: `❌ البوت مو شغال أو التوكن غلط، تأكد من إضافته أول.`, ephemeral: true }); }
         }
     }
-
     if (i.isButton() && i.customId.startsWith('approve_bot_')) {
         const [, , botId] = i.customId.split('_');
         await i.update({ content: `✅ تمت الموافقة! الرابط: https://discord.com/oauth2/authorize?client_id=${botId}&permissions=8&scope=bot`, components: [] });
@@ -305,7 +250,6 @@ client.on('roleCreate', async role => {
         if (p) await p.ban({ reason: 'إنشاء رتب بدون إذن' }); 
     }
 });
-
 client.on('roleDelete', async role => {
     let execId = await getExecutorId(role.guild, AuditLogEvent.RoleDelete, role.id);
     sendLog(role.guild, '🗑️ حذف رتبة', '#f04747', role.guild.iconURL(), [{ name: 'الرتبة', value: role.name, inline: true }, { name: 'بواسطة', value: execId ? `<@${execId}>` : 'غير معروف', inline: true }]);
@@ -316,7 +260,6 @@ client.on('roleDelete', async role => {
         if (p) await p.ban({ reason: 'حذف رتب السيرفر' }); 
     }
 });
-
 client.on('roleUpdate', async (oldRole, newRole) => {
     if (oldRole.name === newRole.name && oldRole.color === newRole.color && oldRole.permissions.bitfield === newRole.permissions.bitfield) return;
     let execId = await getExecutorId(newRole.guild, AuditLogEvent.RoleUpdate, newRole.id);
@@ -333,7 +276,6 @@ client.on('roleUpdate', async (oldRole, newRole) => {
         }
     }
 });
-
 client.on('channelCreate', async channel => {
     let execId = await getExecutorId(channel.guild, AuditLogEvent.ChannelCreate, channel.id);
     sendLog(channel.guild, '📁 إنشاء روم', '#43b581', channel.guild.iconURL(), [{ name: 'الروم', value: `<#${channel.id}>`, inline: true }, { name: 'بواسطة', value: execId ? `<@${execId}>` : 'غير معروف', inline: true }]);
@@ -344,7 +286,6 @@ client.on('channelCreate', async channel => {
         if (p) await p.ban({ reason: 'تخريب رومات' });
     }
 });
-
 client.on('channelDelete', async channel => {
     let execId = await getExecutorId(channel.guild, AuditLogEvent.ChannelDelete, channel.id);
     sendLog(channel.guild, '🗑️ حذف روم', '#f04747', channel.guild.iconURL(), [{ name: 'اسم الروم', value: channel.name, inline: true }, { name: 'بواسطة', value: execId ? `<@${execId}>` : 'غير معروف', inline: true }]);
@@ -355,7 +296,6 @@ client.on('channelDelete', async channel => {
         if (p) await p.ban({ reason: 'تخريب رومات' });
     }
 });
-
 client.on('guildBanAdd', async ban => {
     let execId = await getExecutorId(ban.guild, AuditLogEvent.MemberBanAdd, ban.user.id);
     sendLog(ban.guild, '🔨 حظر عضو (باند)', '#f04747', ban.user.displayAvatarURL(), [{ name: 'العضو', value: `<@${ban.user.id}>`, inline: true }, { name: 'بواسطة', value: execId ? `<@${execId}>` : 'غير معروف', inline: true }]);
@@ -367,7 +307,6 @@ client.on('guildBanAdd', async ban => {
         if (p) await p.ban({ reason: 'تبنيد عشوائي' });
     }
 });
-
 client.on('guildMemberRemove', async member => {
     if (member.user.bot) return;
     let execId = await getExecutorId(member.guild, AuditLogEvent.MemberKick, member.id);
@@ -383,7 +322,6 @@ client.on('guildMemberRemove', async member => {
         sendLog(member.guild, '📤 مغادرة عضو', '#f04747', member.user.displayAvatarURL(), [{ name: 'العضو', value: `<@${member.id}>`, inline: true }, { name: 'بواسطة', value: `<@${member.id}> (بنفسه)`, inline: true }]);
     }
 });
-
 client.on('guildMemberUpdate', async (oldM, newM) => {
     const avatar = newM.user.displayAvatarURL();
     if (oldM.roles.cache.size !== newM.roles.cache.size) {
@@ -400,7 +338,6 @@ client.on('guildMemberUpdate', async (oldM, newM) => {
         }
     }
 });
-
 client.on('guildMemberAdd', async member => {
     if (!member.user.bot) return;
     let execId = await getExecutorId(member.guild, AuditLogEvent.BotAdd, member.id);
