@@ -7,7 +7,6 @@ const {
 const fs = require('fs');
 const wait = require('util').promisify(setTimeout);
 const { joinVoiceChannel } = require('@discordjs/voice');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const express = require('express'); // ضروري لمنصة Render
 
 // ==========================================
@@ -22,7 +21,8 @@ app.listen(PORT, () => console.log(`🌐 Web server is running on port ${PORT}`)
 // ⚙️ الإعدادات الأساسية
 // ==========================================
 const MAIN_BOT_TOKEN = process.env.TOKEN || 'ضع_توكن_البوت_الرئيسي_هنا';
-// حطيت لك مفتاحك الجديد هنا عشان نضمن إنه يقرأه صح 100%
+
+// حطيت لك مفتاحك الأخير اللي يبدأ بـ AQ عشان نستخدمه بالطريقة المباشرة
 const GEMINI_API_KEY = process.env.GEMINI_KEY || 'AQ.Ab8RN6KjQENn4sdZpp3sX0mCZ13CU6cZ4HLF002azSx9h8_OIg';
 const PREFIX = '!';
 const OWNER_ID = '972244532542459954';
@@ -41,7 +41,6 @@ const client = new Client({
     ]
 });
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const activeBots = new Map(); 
 
 // ==========================================
@@ -187,20 +186,34 @@ client.on(Events.MessageCreate, async message => {
         await message.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(selectMenu)] });
     }
 
-    // --- 4. محادثة الذكاء الاصطناعي (مع الفخ لمعرفة الخطأ) ---
+    // --- 4. محادثة الذكاء الاصطناعي (الطريقة المباشرة بدون مكتبات قوقل المعطوبة) ---
     if (db.ai_channel && message.channel.id === db.ai_channel && !message.content.startsWith(PREFIX)) {
         await message.channel.sendTyping();
         try {
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
-            const result = await model.generateContent(message.content);
-            await message.reply(result.response.text());
+            // الاستدعاء المباشر لسيرفرات قوقل
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: message.content }] }]
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                console.error(data.error);
+                await message.reply(`معليش، الذكاء الاصطناعي يواجه مشكلة حالياً.\n**السبب من سيرفرات قوقل:** \`${data.error.message}\``);
+            } else {
+                const replyText = data.candidates[0].content.parts[0].text;
+                await message.reply(replyText);
+            }
         } catch (error) {
             console.error(error);
-            // 👇 هنا الفخ اللي بيعلمنا وش المشكلة بالضبط داخل الدسكورد
-            await message.reply(`معليش، الذكاء الاصطناعي يواجه مشكلة حالياً.\n**السبب من سيرفرات قوقل:** \`${error.message}\``);
+            await message.reply(`معليش، البوت يواجه مشكلة بالاتصال.\n**السبب:** \`${error.message}\``);
         }
     }
-}); // هذا هو القوس اللي كان ناقص عليك يا وحش 😉
+});
 
 // ==========================================
 // 🖱️ التفاعلات (القوائم المنسدلة والموديلز والأزرار)
@@ -254,8 +267,6 @@ client.on(Events.InteractionCreate, async i => {
         if (i.customId === 'whitelist_modal') {
             const id = i.fields.getTextInputValue('user_id_input');
             let s = db[i.guild.id] || {};
-            
-            // إصلاح نظام رتب التخطي
             if (!s.whitelist) s.whitelist = []; 
 
             if (s.whitelist.includes(id)) { 
@@ -265,9 +276,7 @@ client.on(Events.InteractionCreate, async i => {
                 s.whitelist.push(id); 
                 await i.reply({ content: `✅ أضفنا الرتبة \`${id}\``, ephemeral: true }); 
             }
-            
-            db[i.guild.id] = s; 
-            saveDB(); 
+            db[i.guild.id] = s; saveDB(); 
             
             const st = (state) => state ? '🟢 **مفعل**' : '🔴 **معطل**';
             const embed = new EmbedBuilder().setTitle('🛡️ لوحة تحكم الحماية').setColor('#2b2d31').setDescription(`> 🎭 **حماية الرتب الشاملة:** ${st(s.antiRole)}\n> 📁 **حماية الرومات:** ${st(s.antiChannel)}\n> 👥 **منع توزيع الرتب:** ${st(s.antiRoleAssign)}\n> 🔨 **حماية الباند:** ${st(s.antiBan)}\n> 👢 **حماية الطرد:** ${st(s.antiKick)}\n> 🔗 **الروابط والملفات:** ${st(s.antiLink)}\n\n🛡️ **رتب التخطي:** 🎖️ \`${s.whitelist.length}\` رتب مسجلة`).setFooter({ text: 'التخطي يعتمد على الرتب 🚨' });
@@ -307,7 +316,7 @@ client.on(Events.InteractionCreate, async i => {
         }
     }
 
-    // 3. الأزرار (Buttons - حماية البوتات المخربة)
+    // 3. الأزرار (Buttons)
     if (i.isButton() && i.customId.startsWith('approve_bot_')) {
         const [, , botId] = i.customId.split('_');
         await i.update({ content: `✅ تمت الموافقة! الرابط: https://discord.com/oauth2/authorize?client_id=${botId}&permissions=8&scope=bot`, components: [] });
@@ -315,7 +324,7 @@ client.on(Events.InteractionCreate, async i => {
 });
 
 // ==========================================
-// 🛡️ أحداث الحماية (الأدوار، الرومات، الباند، إلخ)
+// 🛡️ أحداث الحماية
 // ==========================================
 client.on('roleCreate', async role => {
     let execId = await getExecutorId(role.guild, AuditLogEvent.RoleCreate, role.id);
