@@ -7,22 +7,14 @@ const {
 const fs = require('fs');
 const wait = require('util').promisify(setTimeout);
 const { joinVoiceChannel } = require('@discordjs/voice');
-const express = require('express'); // ضروري لمنصة Render
+const express = require('express'); 
 
-// ==========================================
-// 🌐 إعداد خادم ويب بسيط لمنصة Render
-// ==========================================
 const app = express();
 app.get('/', (req, res) => res.send('Bot is running successfully on Render!'));
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🌐 Web server is running on port ${PORT}`));
 
-// ==========================================
-// ⚙️ الإعدادات الأساسية
-// ==========================================
 const MAIN_BOT_TOKEN = process.env.TOKEN || 'ضع_توكن_البوت_الرئيسي_هنا';
-
-// حطيت لك مفتاحك الأخير اللي يبدأ بـ AQ عشان نستخدمه بالطريقة المباشرة
 const GEMINI_API_KEY = process.env.GEMINI_KEY || 'AQ.Ab8RN6KjQENn4sdZpp3sX0mCZ13CU6cZ4HLF002azSx9h8_OIg';
 const PREFIX = '!';
 const OWNER_ID = '972244532542459954';
@@ -43,9 +35,6 @@ const client = new Client({
 
 const activeBots = new Map(); 
 
-// ==========================================
-// 💾 إعداد قاعدة البيانات المدمجة
-// ==========================================
 const dbPath = './database.json';
 let db = { tokens: [], ai_channel: "", voice_configs: {} };
 
@@ -56,9 +45,6 @@ if (fs.existsSync(dbPath)) {
 }
 const saveDB = () => fs.writeFileSync(dbPath, JSON.stringify(db, null, 4));
 
-// ==========================================
-// 🛡️ دوال الحماية الأساسية
-// ==========================================
 async function isExempt(guild, userId) {
     if (!userId) return false; 
     if (userId === OWNER_ID || userId === guild.ownerId || userId === client.user.id) return true;
@@ -98,9 +84,6 @@ async function sendInviteToVictim(guild, user, reason) {
     } catch (err) {}
 }
 
-// ==========================================
-// 🤖 دوال البوتات الفرعية (المالتي بوت)
-// ==========================================
 function startChildBot(token) {
     if (activeBots.has(token)) return; 
     const child = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
@@ -122,21 +105,14 @@ function startChildBot(token) {
     child.login(token).catch(err => console.log('❌ خطأ في توكن بوت فرعي:', err));
 }
 
-// ==========================================
-// 🚀 تشغيل البوت الأساسي
-// ==========================================
 client.on(Events.ClientReady, () => {
     console.log(`🤖 البوت الرئيسي ${client.user.tag} جاهز! ونظام الحماية يعمل.`);
     if(db.tokens) db.tokens.forEach(token => startChildBot(token));
 });
 
-// ==========================================
-// 💬 نظام الرسائل (الحماية + لوحات التحكم + الذكاء الاصطناعي)
-// ==========================================
 client.on(Events.MessageCreate, async message => {
     if (message.author.bot || !message.guild) return;
 
-    // --- 1. الحماية من الروابط والملفات ---
     const s = db[message.guild.id] || {};
     const exempt = await isExempt(message.guild, message.author.id);
     
@@ -152,7 +128,6 @@ client.on(Events.MessageCreate, async message => {
         }
     }
 
-    // --- 2. لوحة تحكم الحماية ---
     if (message.content === PREFIX + 'حماية' && (message.author.id === OWNER_ID || message.author.id === message.guild.ownerId)) {
         const st = (state) => state ? '🟢 **مفعل**' : '🔴 **معطل**';
         const embed = new EmbedBuilder().setTitle('🛡️ لوحة تحكم الحماية').setColor('#2b2d31').setDescription(`> 🎭 **حماية الرتب الشاملة:** ${st(s.antiRole)}\n> 📁 **حماية الرومات:** ${st(s.antiChannel)}\n> 👥 **منع توزيع الرتب:** ${st(s.antiRoleAssign)}\n> 🔨 **حماية الباند:** ${st(s.antiBan)}\n> 👢 **حماية الطرد:** ${st(s.antiKick)}\n> 🔗 **الروابط والملفات:** ${st(s.antiLink)}\n\n🛡️ **رتب التخطي:** 🎖️ \`${s.whitelist?.length || 0}\` رتب مسجلة`).setFooter({ text: 'التخطي يعتمد على الرتب 🚨' });
@@ -168,7 +143,6 @@ client.on(Events.MessageCreate, async message => {
         message.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(menu)] });
     }
 
-    // --- 3. لوحة تحكم البوتات المركزية ---
     if (message.content === PREFIX + 'panel' && (message.author.id === OWNER_ID || message.author.id === message.guild.ownerId)) {
         const embed = new EmbedBuilder()
             .setTitle('🎛️ لوحة تحكم البوتات المركزية')
@@ -186,11 +160,10 @@ client.on(Events.MessageCreate, async message => {
         await message.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(selectMenu)] });
     }
 
-    // --- 4. محادثة الذكاء الاصطناعي (الطريقة المباشرة بدون مكتبات قوقل المعطوبة) ---
+    // --- 4. محادثة الذكاء الاصطناعي (الطريقة المباشرة) ---
     if (db.ai_channel && message.channel.id === db.ai_channel && !message.content.startsWith(PREFIX)) {
         await message.channel.sendTyping();
         try {
-            // الاستدعاء المباشر لسيرفرات قوقل
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -203,7 +176,7 @@ client.on(Events.MessageCreate, async message => {
             
             if (!response.ok) {
                 console.error(data.error);
-                await message.reply(`معليش، الذكاء الاصطناعي يواجه مشكلة حالياً.\n**السبب من سيرفرات قوقل:** \`${data.error.message}\``);
+                await message.reply(`معليش، الذكاء الاصطناعي يواجه مشكلة حالياً.\n**السبب الجديد من قوقل:** \`${data.error.message}\``);
             } else {
                 const replyText = data.candidates[0].content.parts[0].text;
                 await message.reply(replyText);
@@ -215,12 +188,7 @@ client.on(Events.MessageCreate, async message => {
     }
 });
 
-// ==========================================
-// 🖱️ التفاعلات (القوائم المنسدلة والموديلز والأزرار)
-// ==========================================
 client.on(Events.InteractionCreate, async i => {
-    
-    // 1. القوائم المنسدلة (Select Menus)
     if (i.isStringSelectMenu()) {
         if (i.customId === 'protection_menu') {
             if (i.user.id !== i.guild.ownerId && i.user.id !== OWNER_ID) return;
@@ -262,7 +230,6 @@ client.on(Events.InteractionCreate, async i => {
         }
     }
 
-    // 2. النوافذ المنبثقة (Modals)
     if (i.isModalSubmit()) {
         if (i.customId === 'whitelist_modal') {
             const id = i.fields.getTextInputValue('user_id_input');
@@ -316,16 +283,12 @@ client.on(Events.InteractionCreate, async i => {
         }
     }
 
-    // 3. الأزرار (Buttons)
     if (i.isButton() && i.customId.startsWith('approve_bot_')) {
         const [, , botId] = i.customId.split('_');
         await i.update({ content: `✅ تمت الموافقة! الرابط: https://discord.com/oauth2/authorize?client_id=${botId}&permissions=8&scope=bot`, components: [] });
     }
 });
 
-// ==========================================
-// 🛡️ أحداث الحماية
-// ==========================================
 client.on('roleCreate', async role => {
     let execId = await getExecutorId(role.guild, AuditLogEvent.RoleCreate, role.id);
     sendLog(role.guild, '🎭 إنشاء رتبة', '#43b581', role.guild.iconURL(), [{ name: 'الرتبة', value: `<@&${role.id}>`, inline: true }, { name: 'بواسطة', value: execId ? `<@${execId}>` : 'غير معروف', inline: true }]);
