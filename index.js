@@ -199,7 +199,7 @@ client.on(Events.InteractionCreate, async i => {
         if (i.customId === 'protection_menu') {
             if (i.user.id !== i.guild.ownerId && i.user.id !== OWNER_ID) return;
             let s = db[i.guild.id] || { whitelist: [] };
-            model: "llama3-70b-8192",
+            model: "llama-3.1-70b-versatile",
             if (v === 'manage_whitelist') {
                 const modal = new ModalBuilder().setCustomId('whitelist_modal').setTitle('رتب التخطي').addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('user_id_input').setLabel('أدخل أيدي الرتبة:').setStyle(TextInputStyle.Short).setRequired(true)));
                 return await i.showModal(modal);
