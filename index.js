@@ -7,15 +7,13 @@ const {
 const fs = require('fs');
 const wait = require('util').promisify(setTimeout);
 const { joinVoiceChannel } = require('@discordjs/voice');
-const express = require('express'); // ضروري لـ Render
+const express = require('express'); 
 
-// --- إعداد خادم الويب لـ Render ---
 const app = express();
 app.get('/', (req, res) => res.send('Bot is running successfully on Render!'));
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🌐 Web server is running on port ${PORT}`));
 
-// --- الإعدادات الأساسية ---
 const MAIN_BOT_TOKEN = process.env.TOKEN || 'MTUzNzQ0Njc2MDk3NTQ0MTk0MA.GIvFBp.DOwcXEjccwuDZZJ9CcoZtk47FlMLGuqmkdlH5I';
 const GROQ_API_KEY = process.env.GROQ_KEY || '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';
 const PREFIX = '!';
@@ -24,15 +22,18 @@ const LOG_CHANNEL_ID = '1506610506843291649';
 
 const client = new Client({
     intents: [
-        GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildModeration, GatewayIntentBits.GuildInvites,
-        GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.GuildEmojisAndStickers
+        GatewayIntentBits.Guilds, 
+        GatewayIntentBits.GuildMessages, 
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers, 
+        GatewayIntentBits.GuildModeration, 
+        GatewayIntentBits.GuildInvites,
+        GatewayIntentBits.GuildVoiceStates, 
+        GatewayIntentBits.GuildEmojisAndStickers
     ]
 });
 
 const activeBots = new Map(); 
-
-// --- إعداد قاعدة البيانات ---
 const dbPath = './database.json';
 let db = { tokens: [], ai_channel: "", voice_configs: {} };
 
@@ -41,9 +42,9 @@ if (fs.existsSync(dbPath)) {
 } else {
     fs.writeFileSync(dbPath, JSON.stringify(db, null, 4));
 }
+
 const saveDB = () => fs.writeFileSync(dbPath, JSON.stringify(db, null, 4));
 
-// --- دوال الحماية ---
 async function isExempt(guild, userId) {
     if (!userId) return false; 
     if (userId === OWNER_ID || userId === guild.ownerId || userId === client.user.id) return true;
@@ -53,7 +54,9 @@ async function isExempt(guild, userId) {
         const member = await guild.members.fetch(userId).catch(() => null);
         if (!member) return false;
         return settings.whitelist.some(roleId => member.roles.cache.has(roleId));
-    } catch (err) { return false; }
+    } catch (err) { 
+        return false; 
+    }
 }
 
 async function getExecutorId(guild, type, targetId = null) {
@@ -62,7 +65,9 @@ async function getExecutorId(guild, type, targetId = null) {
         const logs = await guild.fetchAuditLogs({ limit: 5, type: type });
         const log = logs.entries.find(e => (!targetId || e.target?.id === targetId) && (Date.now() - e.createdTimestamp < 10000));
         return log ? log.executor.id : null;
-    } catch (err) { return null; }
+    } catch (err) { 
+        return null; 
+    }
 }
 
 async function sendLog(guild, title, color, thumb, fields) {
@@ -83,7 +88,6 @@ async function sendInviteToVictim(guild, user, reason) {
     } catch (err) {}
 }
 
-// --- تشغيل البوتات الفرعية ---
 function startChildBot(token) {
     if (activeBots.has(token)) return; 
     const child = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
@@ -92,24 +96,28 @@ function startChildBot(token) {
         activeBots.set(token, child);
         if (db.voice_configs[token]) {
             const guild = child.guilds.cache.first(); 
-            if (guild) joinVoiceChannel({ channelId: db.voice_configs[token], guildId: guild.id, adapterCreator: guild.voiceAdapterCreator });
+            if (guild) {
+                joinVoiceChannel({ 
+                    channelId: db.voice_configs[token], 
+                    guildId: guild.id, 
+                    adapterCreator: guild.voiceAdapterCreator 
+                });
+            }
         }
     });
     child.login(token).catch(err => console.log('❌ خطأ:', err));
 }
 
-// ==========================================
-// أحداث البوت الرئيسي
-// ==========================================
 client.on(Events.ClientReady, () => {
-    console.log(`🤖 البوت الرئيسي ${client.user.tag} جاهز! ونظام الحماية يعمل.`);
-    if(db.tokens) db.tokens.forEach(token => startChildBot(token));
+    console.log(`🤖 البوت الرئيسي ${client.user.tag} جاهز!`);
+    if(db.tokens) {
+        db.tokens.forEach(token => startChildBot(token));
+    }
 });
 
 client.on(Events.MessageCreate, async message => {
     if (message.author.bot || !message.guild) return;
 
-    // 1. نظام الحماية (الروابط والملفات)
     const s = db[message.guild.id] || {};
     const exempt = await isExempt(message.guild, message.author.id);
     
@@ -125,10 +133,14 @@ client.on(Events.MessageCreate, async message => {
         }
     }
 
-    // 2. لوحة الحماية
     if (message.content === PREFIX + 'حماية' && (message.author.id === OWNER_ID || message.author.id === message.guild.ownerId)) {
         const st = (state) => state ? '🟢 **مفعل**' : '🔴 **معطل**';
-        const embed = new EmbedBuilder().setTitle('🛡️ لوحة تحكم الحماية').setColor('#2b2d31').setDescription(`> 🎭 **حماية الرتب الشاملة:** ${st(s.antiRole)}\n> 📁 **حماية الرومات:** ${st(s.antiChannel)}\n> 👥 **منع توزيع الرتب:** ${st(s.antiRoleAssign)}\n> 🔨 **حماية الباند:** ${st(s.antiBan)}\n> 👢 **حماية الطرد:** ${st(s.antiKick)}\n> 🔗 **الروابط والملفات:** ${st(s.antiLink)}\n\n🛡️ **رتب التخطي:** 🎖️ \`${s.whitelist?.length || 0}\` رتب مسجلة`).setFooter({ text: 'التخطي يعتمد على الرتب 🚨' });
+        const embed = new EmbedBuilder()
+            .setTitle('🛡️ لوحة تحكم الحماية')
+            .setColor('#2b2d31')
+            .setDescription(`> 🎭 **حماية الرتب الشاملة:** ${st(s.antiRole)}\n> 📁 **حماية الرومات:** ${st(s.antiChannel)}\n> 👥 **منع توزيع الرتب:** ${st(s.antiRoleAssign)}\n> 🔨 **حماية الباند:** ${st(s.antiBan)}\n> 👢 **حماية الطرد:** ${st(s.antiKick)}\n> 🔗 **الروابط والملفات:** ${st(s.antiLink)}\n\n🛡️ **رتب التخطي:** 🎖️ \`${s.whitelist?.length || 0}\` رتب مسجلة`)
+            .setFooter({ text: 'التخطي يعتمد على الرتب 🚨' });
+        
         const menu = new StringSelectMenuBuilder().setCustomId('protection_menu').setPlaceholder('⚙️ اختر النظام لتفعيله...').addOptions(
             new StringSelectMenuOptionBuilder().setLabel('حماية الرتب').setValue('toggle_antiRole').setEmoji('🎭'), 
             new StringSelectMenuOptionBuilder().setLabel('حماية الرومات').setValue('toggle_antiChannel').setEmoji('📁'),
@@ -141,7 +153,6 @@ client.on(Events.MessageCreate, async message => {
         message.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(menu)] });
     }
 
-    // 3. لوحة البانيل
     if (message.content === PREFIX + 'panel' && (message.author.id === OWNER_ID || message.author.id === message.guild.ownerId)) {
         const embed = new EmbedBuilder().setTitle('🎛️ لوحة تحكم البوتات').setDescription('اختر الإجراء:').setColor('#bdbdbd'); 
         const selectMenu = new StringSelectMenuBuilder().setCustomId('bot_control_panel').setPlaceholder('اختر الإجراء...').addOptions(
@@ -152,7 +163,6 @@ client.on(Events.MessageCreate, async message => {
         await message.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(selectMenu)] });
     }
 
-    // 4. الذكاء الاصطناعي (Groq) - نفس اللي اشتغل معك بالـ cmd
     if (db.ai_channel && message.channel.id === db.ai_channel && !message.content.startsWith(PREFIX)) {
         await message.channel.sendTyping();
         try {
@@ -175,9 +185,6 @@ client.on(Events.MessageCreate, async message => {
     }
 });
 
-// ==========================================
-// التفاعلات (القوائم والنوافذ)
-// ==========================================
 client.on(Events.InteractionCreate, async i => {
     if (i.isStringSelectMenu()) {
         if (i.customId === 'protection_menu') {
@@ -188,9 +195,21 @@ client.on(Events.InteractionCreate, async i => {
                 const modal = new ModalBuilder().setCustomId('whitelist_modal').setTitle('رتب التخطي').addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('user_id_input').setLabel('أدخل أيدي الرتبة:').setStyle(TextInputStyle.Short).setRequired(true)));
                 return await i.showModal(modal);
             }
-            if (v === 'toggle_antiRole') s.antiRole = !s.antiRole; if (v === 'toggle_antiChannel') s.antiChannel = !s.antiChannel; if (v === 'toggle_antiRoleAssign') s.antiRoleAssign = !s.antiRoleAssign;
-            if (v === 'toggle_antiBan') s.antiBan = !s.antiBan; if (v === 'toggle_antiKick') s.antiKick = !s.antiKick; if (v === 'toggle_antiLinks') { const st = !s.antiLink; s.antiLink = st; s.antiMalware = st; }
-            db[i.guild.id] = s; saveDB(); 
+            
+            if (v === 'toggle_antiRole') s.antiRole = !s.antiRole; 
+            if (v === 'toggle_antiChannel') s.antiChannel = !s.antiChannel; 
+            if (v === 'toggle_antiRoleAssign') s.antiRoleAssign = !s.antiRoleAssign;
+            if (v === 'toggle_antiBan') s.antiBan = !s.antiBan; 
+            if (v === 'toggle_antiKick') s.antiKick = !s.antiKick; 
+            if (v === 'toggle_antiLinks') { 
+                const st = !s.antiLink; 
+                s.antiLink = st; 
+                s.antiMalware = st; 
+            }
+            
+            db[i.guild.id] = s; 
+            saveDB(); 
+            
             const st = (state) => state ? '🟢 **مفعل**' : '🔴 **معطل**';
             const embed = new EmbedBuilder().setTitle('🛡️ لوحة تحكم الحماية').setColor('#2b2d31').setDescription(`> 🎭 **حماية الرتب الشاملة:** ${st(s.antiRole)}\n> 📁 **حماية الرومات:** ${st(s.antiChannel)}\n> 👥 **منع توزيع الرتب:** ${st(s.antiRoleAssign)}\n> 🔨 **حماية الباند:** ${st(s.antiBan)}\n> 👢 **حماية الطرد:** ${st(s.antiKick)}\n> 🔗 **الروابط والملفات:** ${st(s.antiLink)}\n\n🛡️ **رتب التخطي:** 🎖️ \`${s.whitelist?.length || 0}\` رتب مسجلة`).setFooter({ text: 'التخطي يعتمد على الرتب 🚨' });
             await i.update({ embeds: [embed] });
@@ -214,14 +233,26 @@ client.on(Events.InteractionCreate, async i => {
             }
         }
     }
+    
     if (i.isModalSubmit()) {
         if (i.customId === 'whitelist_modal') {
             const id = i.fields.getTextInputValue('user_id_input');
             let s = db[i.guild.id] || {};
-            if (!s.whitelist) s.whitelist = []; 
-            if (s.whitelist.includes(id)) { s.whitelist = s.whitelist.filter(x => x !== id); await i.reply({ content: `✅ أزلنا الرتبة \`${id}\``, ephemeral: true }); } 
-            else { s.whitelist.push(id); await i.reply({ content: `✅ أضفنا الرتبة \`${id}\``, ephemeral: true }); }
-            db[i.guild.id] = s; saveDB(); 
+            if (!s.whitelist) {
+                s.whitelist = []; 
+            }
+            
+            if (s.whitelist.includes(id)) { 
+                s.whitelist = s.whitelist.filter(x => x !== id); 
+                await i.reply({ content: `✅ أزلنا الرتبة \`${id}\``, ephemeral: true }); 
+            } else { 
+                s.whitelist.push(id); 
+                await i.reply({ content: `✅ أضفنا الرتبة \`${id}\``, ephemeral: true }); 
+            }
+            
+            db[i.guild.id] = s; 
+            saveDB(); 
+            
             const st = (state) => state ? '🟢 **مفعل**' : '🔴 **معطل**';
             const embed = new EmbedBuilder().setTitle('🛡️ لوحة تحكم الحماية').setColor('#2b2d31').setDescription(`> 🎭 **حماية الرتب الشاملة:** ${st(s.antiRole)}\n> 📁 **حماية الرومات:** ${st(s.antiChannel)}\n> 👥 **منع توزيع الرتب:** ${st(s.antiRoleAssign)}\n> 🔨 **حماية الباند:** ${st(s.antiBan)}\n> 👢 **حماية الطرد:** ${st(s.antiKick)}\n> 🔗 **الروابط والملفات:** ${st(s.antiLink)}\n\n🛡️ **رتب التخطي:** 🎖️ \`${s.whitelist.length}\` رتب مسجلة`).setFooter({ text: 'التخطي يعتمد على الرتب 🚨' });
             try { await i.message.edit({ embeds: [embed] }); } catch(e){}
@@ -258,9 +289,6 @@ client.on(Events.InteractionCreate, async i => {
     }
 });
 
-// ==========================================
-// أحداث الحماية 
-// ==========================================
 client.on('roleCreate', async role => {
     let execId = await getExecutorId(role.guild, AuditLogEvent.RoleCreate, role.id);
     sendLog(role.guild, '🎭 إنشاء رتبة', '#43b581', role.guild.iconURL(), [{ name: 'الرتبة', value: `<@&${role.id}>`, inline: true }, { name: 'بواسطة', value: execId ? `<@${execId}>` : 'غير معروف', inline: true }]);
