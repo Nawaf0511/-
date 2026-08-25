@@ -199,7 +199,7 @@ client.on(Events.InteractionCreate, async i => {
     if (i.isModalSubmit()) {
         if (i.customId === 'whitelist_modal') {
             const id = i.fields.getTextInputValue('user_id_input');
-            let s = db[i.guild.id] || {};
+            model: "mixtral-8x7b-32768",
             if (!s.whitelist) s.whitelist = []; 
             if (s.whitelist.includes(id)) { s.whitelist = s.whitelist.filter(x => x !== id); await i.reply({ content: `✅ أزلنا الرتبة \`${id}\``, ephemeral: true }); } 
             else { s.whitelist.push(id); await i.reply({ content: `✅ أضفنا الرتبة \`${id}\``, ephemeral: true }); }
